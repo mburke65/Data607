@@ -1,0 +1,131 @@
+---
+title: "SQL & R- Movie Ratings"
+author: "Meaghan Burke"
+date: "February 11, 2018"
+output: html_document
+---
+
+###Choose six recent popular movies.  Ask at least five people that you know (friends, family, classmates, imaginary friends) to rate each of these movie that they have seen on a scale of 1 to 5.  Take the results (observations) and store them in a SQL database.  Load the information into an R dataframe.
+
+
+###Establish the connection
+
+```{r, message=FALSE}
+#Connection to SQL table and relevant libraries 
+library(RMySQL)
+library(sqldf)
+```
+
+```{r echo=FALSE, results='hide',message=FALSE}
+
+connection <- dbConnect(MySQL(), user='root', password='Bagfan26**', 
+                 dbname='movies_db', host='127.0.0.1')
+
+dbListTables(connection)
+
+
+```
+###Opening database connection
+```{r, message=FALSE}
+#Hide actual connection due to password 
+
+#connection <- dbConnect(MySQL(), user='root', password='*******', 
+                 #dbname='movies_db', host='127.0.0.1')
+
+#dbListTables(connection)
+
+
+```
+###Fetch the data & print out samples 
+```{r, message=FALSE}
+
+#establish the connection and fetch the data from the tables 
+imdb_info_rs <- dbSendQuery(connection , "select * from imdb_table")
+
+imdb_info_df <- fetch(imdb_info_rs, n=-1)
+
+
+```
+```{r echo = FALSE, results= 'asis'}
+library(knitr)
+kable(imdb_info_df[1:5, ], caption = "imdb_info_df" )
+```
+
+
+```{r, message=FALSE}
+ratings_rs <- dbSendQuery(connection , "select * from rating_dim")
+
+rating_info_df <- fetch(ratings_rs, n=-1)
+```
+
+```{r echo = FALSE, results= 'asis'}
+
+kable(rating_info_df[1:5, ], caption = "rating_info_df" )
+```
+
+
+
+```{r, message=FALSE}
+genre_rs <- dbSendQuery(connection , "select * from genre_dim")
+
+genre_info_df <- fetch(genre_rs, n=-1)
+
+
+```
+
+```{r echo = FALSE, results= 'asis'}
+
+kable(genre_info_df[1:5, ], caption = "genre_info_df" )
+```
+###Merge the data on "Title_Generated_Number"
+```{r setup, message=FALSE}
+comprehensive_rating<- merge(x = imdb_info_df, y = rating_info_df, by = "Title_Generated_Number", all = TRUE)
+comprehensive_rating<- merge(x = comprehensive_rating, y = genre_info_df, by = "Title_Generated_Number", all = TRUE)
+
+
+head(comprehensive_rating,10)
+```
+###Explore the data
+```{r, message=FALSE}
+#Display the summary statistics of "comprehensive_ratings""
+summary(comprehensive_rating)
+```
+
+```{r, message=FALSE}
+#Display the column names of "comprehensive_ratings"
+names(comprehensive_rating)
+```
+
+```{r, message=FALSE}
+#Display the structure of "comprehensive_rating".
+str(comprehensive_rating)
+```
+```{r, message=FALSE}
+library(ggplot2)
+# Basic barplot. Average family rank for the top imdb movies 
+p<-ggplot(data=comprehensive_rating, aes(x=Title_Generated_Number, y=Average__Ranking)) +
+  geom_bar(stat="identity", fill="steelblue")+
+  geom_text(aes(label=Average__Ranking), vjust=-0.3, size=3.5)+
+  theme_minimal()
+p
+   
+# Horizontal bar plot
+p + coord_flip()
+```
+```{r, message=FALSE}
+# Basic scatter plot with regression line IMDB Rank VS Average family Rank
+ggplot(comprehensive_rating, aes(x=Rank_IMBD, y=Average__Ranking)) + geom_point(size=2, shape=23)+
+  geom_smooth(method=lm)
+```
+```{r, message=FALSE}
+# Basic barplot. Count the number of films in each genre 
+ggplot(data=comprehensive_rating,aes(x=genre)) + geom_bar(fill="darkred")
+
+
+```
+```{r, message=FALSE}
+# Basic barplot. Count the number of films in each genre 
+ggplot(data=comprehensive_rating,aes(x=Year)) + geom_bar(fill="green")
+
+```
+
