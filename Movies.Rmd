@@ -16,15 +16,7 @@ library(RMySQL)
 library(sqldf)
 ```
 
-```{r echo=FALSE, results='hide',message=FALSE}
 
-connection <- dbConnect(MySQL(), user='root', password='Bagfan26**', 
-                 dbname='movies_db', host='127.0.0.1')
-
-dbListTables(connection)
-
-
-```
 ###Opening database connection
 ```{r, message=FALSE}
 #Hide actual connection due to password 
