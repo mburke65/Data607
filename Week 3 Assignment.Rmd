@@ -1,0 +1,122 @@
+---
+title: "Week 3 Assignment"
+author: "Meaghan"
+date: "February 16, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Question 3:
+```{r, warning=FALSE}
+library(stringr)
+
+```
+
+Copy the introductory example. The vector name stores the extracted names:
+[1] "Moe Szyslak" "Burns, C. Montgomery" "Rev. Timothy Lovejoy"
+[4] "Ned Flanders" "Simpson, Homer" "Dr. Julius Hibbert"
+
+
+```{r}
+raw.data <-"555-1239Moe Szyslak(636) 555-0113Burns, C. Montgomery555-6542Rev. Timothy Lovejoy555 8904Ned Flanders636-555-3226Simpson, Homer5553642Dr. Julius Hibbert"
+names <- unlist(str_extract_all(raw.data, "[[:alpha:]., ]{2,}"))
+print(names)
+```
+
+(A) Use the tools of this chapter to rearrange the vector so that all elements conform to the standard first_name last_name.
+
+```{r}
+#remove initials 
+names2 <- str_replace(names , "C. ", "")
+names2 <- str_replace(names2 , "Rev. ", "")
+names2 <- str_replace(names2 , "Dr. ", "")
+
+
+#Use string split to split the names with comma values. The paste function served as my concatenator. 
+names2[2] <- str_split(names2[2], pattern = ",")
+names2[2] <- paste(names2[2][[1]][2], names2[2][[1]][1], sep=" ")
+names2[5] <- str_split(names2[5], pattern = ",")
+names2[5] <- paste(names2[5][[1]][2], names2[5][[1]][1], sep=" ")
+
+
+print(names2)
+
+```
+ (B) Construct a logical vector indicating whether a character has a title (i.e., Rev. and Dr.). 
+```{r}
+
+dr_title <- str_detect(names, "Dr. ")
+rev_title <- str_detect(names, "Rev. ")
+title_df <- data.frame(names,dr_title, rev_title )
+title_df
+```
+(c) Construct a logical vector indicating whether a character has a second name (Middle Name?).
+```{r}
+middle_name <- str_detect(names, "C. ")
+midle_name_df <- data.frame(names,middle_name )
+midle_name_df 
+```
+
+## Question 4: 
+Describe the types of strings that conform to the following regular expressions and construct an example that is matched by the regular expression.
+
+```{r}
+expression_1 = "[0-9]+\\$"
+
+#expression_1 applies to one or more numbers, followed by the "$" sign.
+
+test_1 <- c("5627$", "65666$", "2$")
+str_detect(test_1,expression_1)
+
+```
+```{r}
+expression_2 <- "\\b[a-z]{1,4}\\b"
+#expression_2 applies to words with one to four letters
+test_2<- c("Meaghan", "test", "regx", "questions")
+str_detect(test_2, expression_2)
+
+```
+```{r}
+expression_3 <- ".*?\\.txt$"
+#expression_3 represents a string with a ".txt" at the end. 
+test_3 <- c("file.txt","file.pdf","file.exe","homework.txt")
+
+str_detect(test_3, expression_3)
+```
+```{r}
+expression_4<-"\\d{2}/\\d{2}/\\d{4}"
+#expression of numbers in the xx/xx/xxxx, relavent for dates.
+
+test_4 <-c("05/26/1993", "05/10/2015", "12/31/2017")
+str_detect(test_4, expression_4)
+```
+```{r}
+expression_5 <- "<(.+?)>.+?</\\1>"
+#this expression is a tag format.The first part is an expression1 inside the "<>" followed by expression2 outside "<>", followed by expression1 inside "</>"
+test_5 <- c("<test1>test2</test1>", "<html>blue</html>")
+str_detect(test_5, expression_5)
+			
+```
+
+#Question 9
+
+The following code hides a secret message. Crack it with R and regular expressions. Hint: Some of the characters are more revealing than others! The code snippet is also available in the materials at www.r-datacollection.com.
+
+
+
+```{r}
+extra_credit <- paste("clcopCow1zmstc0d87wnkig7OvdicpNuggvhryn92Gjuwczi8hqrfpRxs5Aj5dwpn0Tanwo Uwisdij7Lj8kpf03AT5Idr3coc0bt7yczjatOaootj55t3Nj3ne6c4Sfek.r1w1YwwojigO d6vrfUrbz2.2bkAnbhzgv4R9i05zEcrop.wAgnb.SqoU65fPa1otfb7wEm24k6t3sR9zqe5 fy89n6Nd5t9kc4fE905gmc4Rgxo5nhDk!gr")
+
+upper_case <- unlist(str_extract_all(extra_credit, "[[:upper:].]{1,}"))
+upper_case
+
+length(upper_case)
+upper_case <- paste(upper_case, sep="", collapse="")
+secret_message <- str_replace_all(upper_case, "[.]", " ")
+
+secret_message
+```
+
