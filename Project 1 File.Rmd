@@ -1,0 +1,302 @@
+---
+title: "Project 1-Data 607"
+author: "Meaghan"
+date: "February 25, 2018"
+output: html_document
+---
+## Project 1 Scope
+
+In this project, you’re given a text file with chess tournament results where the information has some structure. Your
+job is to create an R Markdown file that generates a .CSV file (that could for example be imported into a SQL database) with the following information for all of the players:
+Player’s Name, Player’s State, Total Number of Points, Player’s Pre-Rating, and Average Pre Chess Rating of Opponents
+
+```{r, message=FALSE}
+library(data.table)
+library(stringr)
+
+original_file <- data.frame(read.table('C:/Users/burke/OneDrive/Desktop/Data 607/tournamentinfo_project1.txt', 
+									   sep = ",", fill = TRUE ))
+
+reformatted_file <- data.frame(original_file[grep("-----------------------------------------------------------------------------------------", original_file$V1, invert = TRUE) , ])
+```
+
+
+
+
+
+
+
+```{r}
+#split into oddd and even rows to group the values appropriately
+odd_rows <- data.frame(reformatted_file[ !c(TRUE,FALSE), ])  # rows
+
+
+even_rows <-data.frame(reformatted_file[ !c(FALSE,TRUE), ])  # rows
+
+```
+
+
+```{r results = 'asis'}
+#reformat the evens data 
+split_even <- strsplit(as.character(even_rows$reformatted_file..c.FALSE..TRUE....), "|", fixed = TRUE)
+
+Pair <- sapply(split_even , "[", 1)
+Player_Name<- sapply(split_even , "[", 2)
+Total<- sapply(split_even , "[", 3)
+Total <- as.numeric(as.character(Total))
+Round_1<- sapply(split_even , "[", 4)
+Round_2<- sapply(split_even , "[", 5)
+Round_3<- sapply(split_even , "[", 6)
+Round_4<- sapply(split_even , "[", 7)
+Round_5<- sapply(split_even , "[", 8)
+Round_6<- sapply(split_even , "[", 9)
+Round_7<- sapply(split_even , "[", 10)
+
+
+
+evens_data  <- data.frame (Pair, Player_Name, Total, Round_1, Round_2, Round_3, Round_4,
+						   Round_5, Round_6, Round_7)
+evens_data <- evens_data[-1 ,]
+
+knitr::kable(head(evens_data,10),  caption = "Initial Even Table")
+```
+
+```{r results = 'asis'}
+sub_evens  <- evens_data[,c("Round_1","Round_2", "Round_3", "Round_4", "Round_5", "Round_6", "Round_7")]
+expression_9 = "[A-Z]"
+opp_1  <- str_replace_all(sub_evens$Round_1, expression_9, "")
+opp_2  <- str_replace_all(sub_evens$Round_2, expression_9, "")
+opp_3  <- str_replace_all(sub_evens$Round_3, expression_9, "")
+opp_4  <- str_replace_all(sub_evens$Round_4, expression_9, "")
+opp_5  <- str_replace_all(sub_evens$Round_5, expression_9, "")
+opp_6  <- str_replace_all(sub_evens$Round_6, expression_9, "")
+opp_7  <- str_replace_all(sub_evens$Round_7, expression_9, "")
+opp_df <-data.frame (opp_1, opp_2, opp_3, opp_4, opp_5, opp_6, opp_7)
+
+knitr::kable(head(opp_df,10),  caption = " Opponents/Round")
+```
+```{r results = 'asis'}
+#win/loss/draw metadata
+sub_evens  <- evens_data[,c("Round_1","Round_2", "Round_3", "Round_4", "Round_5", "Round_6", "Round_7")]
+expression_8 = "[:digit:]"
+winlossdraw_1  <- str_replace_all(sub_evens$Round_1, expression_8, "")
+winlossdraw_2 <- str_replace_all(sub_evens$Round_2, expression_8, "")
+winlossdraw_3<- str_replace_all(sub_evens$Round_3, expression_8, "")
+winlossdraw_4<- str_replace_all(sub_evens$Round_4, expression_8, "")
+winlossdraw_5<- str_replace_all(sub_evens$Round_5, expression_8, "")
+winlossdraw_6<- str_replace_all(sub_evens$Round_6, expression_8, "")
+winlossdraw_7<- str_replace_all(sub_evens$Round_7, expression_8, "")
+winlossdraw_df <-data.frame (winlossdraw_1, winlossdraw_2, winlossdraw_3, winlossdraw_4, winlossdraw_5, winlossdraw_6, winlossdraw_7)
+
+knitr::kable(head(winlossdraw_df,10),  caption = "Win/Loss/Draw")
+```
+```{r results = 'asis'}
+#filter out the important information from the evens dataframe 
+reformatted_evens_df <- data.frame(evens_data[,c("Pair", "Player_Name", "Total")],
+								   opp_df,
+								   winlossdraw_df)
+
+knitr::kable(head(reformatted_evens_df,10),  caption = "Even Rows- Data Table")
+
+```
+
+
+
+
+```{r results = 'asis'}
+#reformatting of the odd data 
+
+split_odd <-strsplit(as.character(odd_rows$reformatted_file..c.TRUE..FALSE...), "|", fixed = TRUE)
+
+Num <- sapply(split_odd , "[", 1)
+USCF_ID_Rtg_Pre_Post <- sapply(split_odd , "[", 2)
+Pts<- sapply(split_odd , "[", 3)
+Pts <- str_replace(Pts , "N:", "")
+Pts <- as.numeric(as.character(Pts))
+
+color_round_1<- sapply(split_odd , "[", 4)
+color_round_2<- sapply(split_odd , "[", 5)
+color_round_3<- sapply(split_odd , "[", 6)
+color_round_4<- sapply(split_odd, "[", 7)
+color_round_5<- sapply(split_odd , "[", 8)
+color_round_6<- sapply(split_odd , "[", 9)
+color_round_7<- sapply(split_odd , "[", 10)
+
+odds_data <-data.frame (Num, USCF_ID_Rtg_Pre_Post, Pts, color_round_1, color_round_2, color_round_3, 
+						color_round_4, color_round_5, color_round_6, color_round_7)
+odds_data <- odds_data[-1 ,]
+
+
+knitr::kable(head(odds_data,10),  caption = "Odd Rows- Data Table")
+```
+
+
+
+
+```{r}
+
+#isolate the USCF ID And the pre and post ratings 
+
+test <- data.frame(USCF_ID_Rtg_Pre_Post)
+id_split <-strsplit(as.character(test$USCF_ID_Rtg_Pre_Post), "/", fixed = TRUE)
+USCF_ID <- sapply(id_split , "[", 1)
+USCF_ID <- str_trim(USCF_ID)
+head(USCF_ID,10)
+```
+
+
+
+
+
+
+```{r}
+Rtg_Pre_Post <- sapply(id_split , "[", 2)
+Rtg_Pre_Post <- data.frame(Rtg_Pre_Post)
+names(Rtg_Pre_Post)
+ratings_split <-strsplit(as.character(Rtg_Pre_Post$Rtg_Pre_Post), "->", fixed = TRUE)
+
+#Pre Ratings
+Pre_ratings <-sapply(ratings_split , "[", 1)
+Pre_ratings <- str_replace(Pre_ratings , " R: ", "")
+expression_10 = "[A-Z]+\\d{2}"
+expression_11 = "[A-Z]+\\d{1}"
+Pre_ratings  <- str_replace_all(Pre_ratings, expression_10, "")
+Pre_ratings  <- str_replace_all(Pre_ratings, expression_11, "")
+Pre_ratings <- str_trim(Pre_ratings)
+head(Pre_ratings,10)
+```
+
+```{r}
+#Post Ratings 
+
+Post_ratings <-sapply(ratings_split , "[", 2)
+Post_ratings <- str_replace(Post_ratings , " R: ", "")
+expression_10 = "[A-Z]+\\d{2}"
+expression_11 = "[A-Z]+\\d{1}"
+Post_ratings  <- str_replace_all(Post_ratings, expression_10, "")
+Post_ratings  <- str_replace_all(Post_ratings, expression_11, "")
+Post_ratings <- str_trim(Post_ratings)
+head(Post_ratings,10)
+
+```
+
+```{r results = 'asis'}
+#convert all appliable data to numerics 
+meta_data <-data.frame (USCF_ID ,Pre_ratings, Post_ratings)
+meta_data <- meta_data[-1 ,]
+meta_data$USCF_ID <-as.numeric(as.character(meta_data$USCF_ID))
+meta_data$Pre_ratings <- as.numeric(as.character(meta_data$Pre_ratings))
+meta_data$Post_ratings <- as.numeric(as.character(meta_data$Post_ratings))
+
+knitr::kable(head(meta_data,10),  caption = "Meta Data Table")
+```
+```{r results = 'asis'}
+#combined actionable elements from the odds and evens dataframe  
+consolidated_df <- data.frame(reformatted_evens_df,
+							  odds_data[,c("Num")], 
+							  meta_data)
+
+knitr::kable(head(consolidated_df,10),  caption = "Consolidated Table")
+```
+
+```{r results = 'asis'}
+#create a reference table to join on the columns
+ref_table <-  data.table(consolidated_df[,c("Pair", "Pre_ratings")]) 
+colnames(ref_table)[colnames(ref_table)=="Pair"] <- "opp_1" 
+ref_table$opp_1 <- as.numeric(as.character(ref_table$opp_1))
+
+knitr::kable(head(ref_table,10),  caption = "Mapping Table")
+
+```
+
+```{r}
+#formatting the columns to numerics 
+consolidated_df$opp_1 <- as.numeric(as.character(consolidated_df$opp_1))
+consolidated_df$opp_2 <- as.numeric(as.character(consolidated_df$opp_2))
+consolidated_df$opp_3 <- as.numeric(as.character(consolidated_df$opp_3))
+consolidated_df$opp_4 <- as.numeric(as.character(consolidated_df$opp_4))
+consolidated_df$opp_5 <- as.numeric(as.character(consolidated_df$opp_5))
+consolidated_df$opp_6 <- as.numeric(as.character(consolidated_df$opp_6))
+consolidated_df$opp_7 <- as.numeric(as.character(consolidated_df$opp_7))
+
+consolidated_df$opp_1[is.na(consolidated_df$opp_1)] <- 0
+consolidated_df$opp_2[is.na(consolidated_df$opp_2)] <- 0
+consolidated_df$opp_3[is.na(consolidated_df$opp_3)] <- 0
+consolidated_df$opp_4[is.na(consolidated_df$opp_4)] <- 0
+consolidated_df$opp_5[is.na(consolidated_df$opp_5)] <- 0
+consolidated_df$opp_6[is.na(consolidated_df$opp_6)] <- 0
+consolidated_df$opp_7[is.na(consolidated_df$opp_7)] <- 0
+```
+
+```{r}
+#get all of the pre ratings from the reference table, merge onto the original
+merged_df <- merge(x = consolidated_df, y = ref_table, by = "opp_1", all.x = TRUE)
+colnames(merged_df)[colnames(merged_df)=="Pre_ratings.y"] <- "opp_1_rating"
+colnames(ref_table)[colnames(ref_table)=="opp_1"] <- "opp_2" 
+merged_df <- merge(x = merged_df, y = ref_table, by = "opp_2", all.x = TRUE)
+colnames(merged_df)[colnames(merged_df)=="Pre_ratings"] <- "opp_2_rating"
+colnames(ref_table)[colnames(ref_table)=="opp_2"] <- "opp_3" 
+merged_df <- merge(x = merged_df, y = ref_table, by = "opp_3", all.x = TRUE)
+colnames(merged_df)[colnames(merged_df)=="Pre_ratings"] <- "opp_3_rating"
+colnames(ref_table)[colnames(ref_table)=="opp_3"] <- "opp_4" 
+merged_df <- merge(x = merged_df, y = ref_table, by = "opp_4", all.x = TRUE)
+colnames(merged_df)[colnames(merged_df)=="Pre_ratings"] <- "opp_4_rating"
+colnames(ref_table)[colnames(ref_table)=="opp_4"] <- "opp_5"
+merged_df <- merge(x = merged_df, y = ref_table, by = "opp_5", all.x = TRUE)
+colnames(merged_df)[colnames(merged_df)=="Pre_ratings"] <- "opp_5_rating"
+colnames(ref_table)[colnames(ref_table)=="opp_5"] <- "opp_6"
+merged_df <- merge(x = merged_df, y = ref_table, by = "opp_6", all.x = TRUE)
+colnames(merged_df)[colnames(merged_df)=="Pre_ratings"] <- "opp_6_rating"
+colnames(ref_table)[colnames(ref_table)=="opp_6"] <- "opp_7"
+merged_df <- merge(x = merged_df, y = ref_table, by = "opp_7", all.x = TRUE)
+colnames(merged_df)[colnames(merged_df)=="Pre_ratings"] <- "opp_7_rating"
+colnames(ref_table)[colnames(ref_table)=="opp_6"] <- "opp_7"
+```
+```{r}
+#fill in the nulls
+merged_df$opp_1_rating[is.na(merged_df$opp_1_rating)] <- 0
+merged_df$opp_2_rating[is.na(merged_df$opp_2_rating)] <- 0
+merged_df$opp_3_rating[is.na(merged_df$opp_3_rating)] <- 0
+merged_df$opp_4_rating[is.na(merged_df$opp_4_rating)] <- 0
+merged_df$opp_5_rating[is.na(merged_df$opp_5_rating)] <- 0
+merged_df$opp_6_rating[is.na(merged_df$opp_6_rating)] <- 0
+merged_df$opp_7_rating[is.na(merged_df$opp_7_rating)] <- 0
+
+```
+
+
+
+
+```{r}
+merged_df$sum_toal_pre_ratings <- (merged_df$opp_1_rating+ merged_df$opp_2_rating+
+						merged_df$opp_3_rating+ merged_df$opp_4_rating+
+									 merged_df$opp_5_rating+ merged_df$opp_6_rating+
+									 merged_df$opp_7_rating)
+```
+
+
+```{r}
+merged_df$div<- 7 -(rowSums(merged_df[,23:29] == 0))
+merged_df$average_opp_pre_ratings <- merged_df$sum_toal_pre_ratings/merged_df$div
+
+```
+###Final Table
+Format: Player’s Name, Player’s State, Total Number of Points, Player’s Pre-Rating, and Average Pre Chess Rating of Opponents 
+```{r results = 'asis'}
+#final Dataframe
+final_df <- merged_df[,c("Pair","Player_Name","odds_data...c..Num...", "Total","Pre_ratings.x", "average_opp_pre_ratings" )]
+final_df<- final_df[order(final_df$Pair),] 
+#renaming some columns
+setnames(final_df, old = c('Pair', 'odds_data...c..Num...','Total','Pre_ratings.x', 'average_opp_pre_ratings' ), 
+         new = c('Ranking','Player State','Total Number of Points', 'Player Pre-Ranking','Average Opponent Pre-Ranking'))
+
+knitr::kable(head(final_df ,10),  caption = "Final-Cleaned DataFrame")
+```
+
+
+
+
+
+
+
+
