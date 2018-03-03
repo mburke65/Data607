@@ -1,0 +1,132 @@
+---
+title: "Week 5 Data 607 Assignment"
+author: "Meaghan "
+date: "March 3, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Assignment – Tidying and Transforming Data
+
+Read the information from your .CSV file into R, and use tidyr and dplyr as needed to tidy
+and transform your data. Perform analysis to compare the arrival delays for the two airlines.
+
+```{r,  warning=FALSE}
+library(tidyr)
+library(dplyr)
+library(readr)
+```
+
+
+```{r,  warning=FALSE}
+initial_df <- read_csv("C:/Data 607/flights_db.csv")
+dim(initial_df)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r, results = 'asis'}
+names(initial_df)<- c("Airline", "Time_Indicator", "Los Angeles", "Phoenix", "San Diego","San Francisco", "Seattle" )
+initial_df <- tbl_df(initial_df)
+knitr::kable(initial_df,  caption = "Initial Airline Table")
+```
+
+```{r, results = 'asis'}
+#remove the null row with the filter function and replaced the missing value in the first column
+summary_df <- (filter(initial_df, Time_Indicator!= ""))
+summary_df[2, "Airline"]  <- "ALASKA"
+summary_df[4, "Airline"]  <- "AM WEST"
+
+knitr::kable(summary_df,  caption = "Cleaned Table")
+
+```
+
+```{r, results = 'asis'}
+#use the gather function to reformat the table
+summary_df <- gather(summary_df, city, number_flights, c("Los Angeles", "Phoenix", "San Diego", "San Francisco","Seattle"))
+
+knitr::kable(summary_df,  caption = "Tidyr Transformed Table") 
+```
+
+```{r, results = 'asis'} 
+
+#filter the "gathered" dataset into 2 for the airlines
+alaska_df<- (filter(summary_df, Airline== "ALASKA"))
+amwest_df<- (filter(summary_df, Airline== "AM WEST"))
+
+knitr::kable(alaska_df,  caption = "Alaska Table") 
+knitr::kable(amwest_df,  caption = "AM WEST Table") 
+
+```
+
+```{r, results = 'asis'} 
+#aggregate Alaska
+agg_alaska <- select(alaska_df,Airline,  city,  number_flights)
+agg_alaska <-	group_by(agg_alaska, city)
+(agg_alaska <- summarise(agg_alaska , total_flights =sum(number_flights)))
+
+knitr::kable(agg_alaska,  caption = "Aggregate Alaska Table-By City") 
+
+#aggregate AM WEST
+agg_amwest <- select(amwest_df,Airline,  city,  number_flights)
+agg_amwest<-	group_by(amwest_df, city)
+(agg_amwest <- summarise(agg_amwest , total_flights =sum(number_flights)))
+
+knitr::kable(agg_amwest,  caption = "Aggregate AM WEST Table-By City") 
+```
+```{r, results = 'asis'} 
+#merged the summarized dataframe onto the regular dataframe to calculate %total delayed and on time flights per city
+alaska_df<- merge(x = alaska_df, y = agg_alaska , by = "city", all = TRUE) 
+alaska_df<- mutate(alaska_df,
+       percent_time_indicator = (number_flights / total_flights)*100)
+alaska_df<-select(alaska_df,Airline,  Time_Indicator,city,  number_flights,percent_time_indicator )
+knitr::kable(alaska_df,  caption = "Consolidated Alaska Table") 
+```
+
+```{r, results = 'asis'} 
+#merged the summarized dataframe onto the regular dataframe to calculate %total delayed and on time flights per city
+amwest_df<- merge(x = amwest_df, y = agg_amwest , by = "city", all = TRUE) 
+amwest_df<- mutate(amwest_df,
+       percent_time_indicator = (number_flights / total_flights)*100)
+amwest_df<-select(amwest_df,Airline,  Time_Indicator,city,  number_flights,percent_time_indicator )
+knitr::kable(amwest_df,  caption = "Consolidated AM WEST Table")
+```
+
+```{r, results = 'asis'} 
+#merged the Alaska and Am WEST tables together 
+merged_df <- left_join(alaska_df,amwest_df, by=c("Time_Indicator","city"), all = TRUE)
+knitr::kable(merged_df,  caption = "Merged Table")
+```
+
+```{r, results = 'asis'} 
+delayed_df <- (filter(merged_df, Time_Indicator== "delayed"))
+delayed_df <- mutate(delayed_df ,
+       airline_of_choice = (percent_time_indicator.x -percent_time_indicator.y))
+delayed_df <- mutate(delayed_df ,
+       airline_of_choice = if_else(airline_of_choice < 1, "ALASKA", "AM WEST"))
+delayed_df  <- tbl_df(delayed_df)
+
+delayed_df <- select(delayed_df, city, percent_time_indicator.x ,percent_time_indicator.y , airline_of_choice )
+
+names(delayed_df)<- c("City", "Alaska Delay %", "AM West Delay %", "Preferred Airline" )
+knitr::kable(delayed_df,  caption = "Delayed Table")
+```
+
+```{r, results = 'asis'} 
+ontime_df <- (filter(merged_df, Time_Indicator== "on time"))
+ontime_df <- mutate(ontime_df ,
+       airline_of_choice = (percent_time_indicator.x -percent_time_indicator.y))
+ontime_df <- mutate(ontime_df ,
+       airline_of_choice = if_else(airline_of_choice > 1, "ALASKA", "AM WEST"))
+ontime_df  <- tbl_df(ontime_df)
+
+ontime_df <- select(ontime_df, city, percent_time_indicator.x ,percent_time_indicator.y , airline_of_choice )
+
+names(ontime_df)<- c("City", "Alaska On Time %", "AM West On Time %", "Preferred Airline" )
+knitr::kable(ontime_df,  caption = "On Time Table")
+
+```
+
+
