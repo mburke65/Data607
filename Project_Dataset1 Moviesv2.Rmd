@@ -1,0 +1,424 @@
+---
+title: "Project 2"
+author: "Meaghan Burke"
+date: "March 11, 2018"
+output: html_document
+---
+
+### Project 2 Assignment
+
+The goal of this assignment is to give you practice in preparing different datasets for downstream
+analysis work.
+
+Choose any three of the wide datasets identified in the Week 5 Discussion items. For each of the three chosen datasets:
+ Create a .CSV fil,  that includes all of the information included in the dataset:
+ 
+-  Read the information from your .CSV file into R, and use tidyr and dplyr as needed to
+tidy and transform your data. [Most of your grade will be based on this step!
+-Perform the analysis requested in the discussion item.Your code should be in an R Markdown file, posted to rpubs.com, and should include
+narrative descriptions of your data cleanup work, analysis, and conclusions. 
+
+
+```{r,  warning=FALSE}
+library(tidyr)
+library(dplyr)
+library(readr)
+library(reshape2)
+library(ggplot2)
+library(knitr)
+library(stringr)
+library(xtable)
+```
+## Project 2, Dataset 1: IMDB Movies 
+
+This untidy dataset was scraped from IMDB with a lot of interesting information on the top movies ever made. However, there is instances of missing and inconsistent information that makes using this dataset difficult in its current state. In this section, I will tidy and pivot the original data into meaningful subgroups using tidyr and dplyr.I performed all of these transformations in a row with the pipe (%>%) operator. 
+
+
+Reading in the original CSV dataframe:
+```{r,  results = 'asis'}
+initial_df <- read_csv("C:/Data 607/Project 2 Dataset/ds1_movie_metadata.csv")
+
+kable(head(initial_df,5),  caption = "Initial Movie Datatable")
+```
+
+I was interested in the genres included in the top 5,000 movies. Each firm had a few genres tagged. The genres were stored in one column, pipe delimited. To access the information, I used the "separate" function. I then melt, restructure, the data and remove the movie titles. What I am left with is two columns: the genre and the counter. I decided to group the data and summarize by the counter.
+
+```{r, results= 'asis'}
+#Top Genres In The Top 5,000 Movies
+
+genre <-select(initial_df, movie_title, genres) %>%
+	separate(genres, c("Genre_1", "Genre_2", "Genre_3", "Genre_4", "Genre_5", "Genre_6", "Genre_7"), sep = "\\|",
+	extra = "drop", fill = "right")%>% 
+	melt(id.vars=c("movie_title"))%>% 
+	select(-(variable: movie_title ))%>%
+	mutate(countvar =1) %>%
+ 	group_by(value) %>% 
+	summarise(genre_sum = sum(countvar)) %>%
+	arrange(desc(genre_sum))%>%
+	filter(value != "Fi") %>%
+	drop_na()%>%
+	rename(movie_genre = value)
+
+kable(head(genre,5),  caption = "Movie Genre Datatable")
+```
+
+I then plot the top 10 rated genres 
+```{r }
+ggplot(head(genre,10), aes(x= reorder(movie_genre, -genre_sum), y= genre_sum)) +
+  geom_bar(stat="identity", color="blue", fill="white") +
+  geom_text(aes(label=genre_sum), vjust=-0.3, size=3.5)+
+  theme_minimal()+ labs(title="Top 10 Movie Genres")
+```
+
+
+
+I was also interested most profitable directors and their associated facebook likes. Each row in the dataset has the director's name, the budget and the gross of each movie. I used mutate the find the net profit of firms for each director. I then grouped the data by the director and summarized the average profit and sum of facebook likes.
+
+```{r, results = 'asis'}
+#Top Profitable Directors In The Top 5,000 Movies
+
+director <-select(initial_df,director_name,director_facebook_likes, budget, gross) %>%
+	mutate(countvar =1) %>%
+	mutate(net_profit= gross - budget) %>%
+ 	group_by(director_name) %>% 
+	#drop_na()%>%
+	summarise(avg_profit = mean(net_profit, na.rm = TRUE), movie_count = sum(countvar, na.rm = TRUE),
+			  facebook_likes = sum(director_facebook_likes, na.rm = TRUE)) %>%
+	arrange(desc(avg_profit))
+
+kable(head(director,5),  caption = "Director Datatable")
+```
+
+
+I was also interested the actor information. More specifically, I was interest in the number of "top rated" movies each actor stared in as welll as and their facebook likes. Each row in the dataset has the actors' name and their facebook likes. I used rbind to merge all the temp dataframes together. I then grouped the data by the actor and summarized by the sum of facebook likes and movie counts.
+
+```{r, results= 'asis'}
+df1 <- select( initial_df,actor_1_name,actor_1_facebook_likes)%>%
+		rename(actor_name= actor_1_name, fb_likes = actor_1_facebook_likes)
+df2 <- select(initial_df, actor_2_name, actor_2_facebook_likes)%>%
+		rename(actor_name= actor_2_name, fb_likes = actor_2_facebook_likes)
+df3 <- select( initial_df,actor_3_name,actor_3_facebook_likes)%>%
+		rename(actor_name= actor_3_name, fb_likes = actor_3_facebook_likes)
+
+actors <- rbind(df1, df2, df3)%>%
+	mutate(countvar =1) %>%
+	group_by(actor_name) %>% 
+	#drop_na()%>%
+	summarise(fb_likes = sum(fb_likes, na.rm = TRUE), movie_count = sum(countvar, na.rm = TRUE)) %>%
+	arrange(desc(fb_likes))
+
+kable(head(actors,5),  caption = "Actors Datatable")
+```
+
+
+I was also interested most popular search keywords for the top movies. The keywords were stored in one column, pipe delimited. To access the information, I used the "separate" function. I then melted, restructured, the data and remove the movie titles. I grouped by the keyword and summarized with the sum of the counter.
+
+```{r, results= 'asis'}
+keyword <-select(initial_df, movie_title, plot_keywords) %>%
+	separate(plot_keywords, c("key_1", "key_2", "key_3", "key_4", "key_5", "key_6", "key_7", "key_8",
+							  "key_9", "key_10"), sep = "\\|",
+	extra = "drop", fill = "right")%>% 
+	melt(id.vars=c("movie_title"))%>% 
+	select(-(variable: movie_title ))%>%
+	mutate(countvar =1) %>%
+ 	group_by(value) %>% 
+	summarise(key_word = sum(countvar)) %>%
+	arrange(desc(key_word))%>%
+	drop_na()
+kable(head(keyword,10),  caption = "Keyword Datatable")
+
+```
+
+Plotted the top 15 keywords
+```{r }
+ggplot(head(keyword, 15), aes(reorder(x=value,-key_word), y=key_word)) + 
+  geom_point(size=3) + 
+  geom_segment(aes(x=value, 
+                   xend=value, 
+                   y=0, 
+                   yend=key_word)) + 
+  labs(title="Keyword Chart", 
+       subtitle="Search Keyword Popularity") + 
+  theme(axis.text.x = element_text(angle=65, vjust=0.6))
+```
+
+
+## Project 2, Dataset 2: US Chronic Disease Indicators (CDI)
+From the description provided on the discussion board:
+The dataset provided by fed for US chronic disease indicator (CDI) is an interesting dataset. The dataset actually outlines that how different states are impacted by certain types of disease category along with clear indicators such as alcohol use among youth, Binge drinking prevalence among adults aged ???18 years, Heavy drinking among adults aged ???18 years, Chronic liver disease mortality etc. 
+
+```{r, results= 'asis'}
+library(data.table)
+initial_cdi_df<-(read.table('https://raw.githubusercontent.com/niteen11/MSDS/master/DATA607/Week5/dataset/U.S._Chronic_Disease_Indicators__CDI.csv',  header = FALSE, sep = ",", quote = "", stringsAsFactors = FALSE,fill = TRUE)) 
+
+names(initial_cdi_df) <- c("Year", "LocationAbbr","LocationDesc","Category","Indicator","Datasource","DataValueUnit","DataValueType","DataValue",
+"DataValueAlt","DataValueFootnoteSymbol","DataValueFootnote","Gender","StratificationID1","IndicatorID","LocationID","LowConfidenceInterval",
+"HighConfidenceInterval","GeoLocation")
+initial_cdi_df <- initial_cdi_df[-1,]
+
+kable(head(initial_cdi_df,10),  caption = "Initial CDI Datatable")
+
+```
+
+
+I was interested in the aggregate prevalence of drinking in different age groups. I filted by the associated category and data value type. Since all the dataset values are stored as characters, I had to convert to a numeric. I then replaced the special character  to ">=" using the stringr library. I grouped by the age group and summarized by the average crude prevalence. I added a sequental counter to the dataframe.
+
+```{r}
+category_df <-select(initial_cdi_df, Category, Indicator,DataValueType, DataValue) %>%
+	filter(Category == "Alcohol" & DataValueType == "Crude Prevalence" ) %>%
+  filter(complete.cases(.)) %>%
+  mutate(DataValue =  as.numeric(DataValue)) %>%
+  #mutate(Indicator= (str_replace_all(Indicator, "â???¥18", ">=18")))%>%
+ 	group_by(Indicator, DataValueType) %>%
+	summarise(average = mean(DataValue, na.rm = TRUE))%>%
+	arrange(Indicator)%>%
+  rename(Measure = DataValueType) 
+category_df$ID <- seq.int(nrow(category_df))
+
+kable(head(category_df,10),  caption = "Alcohol Datatable")
+
+```
+
+```{r }
+# Draw plot
+ggplot(category_df, aes(x=reorder(ID, -average), y=average)) + 
+  geom_bar(stat="identity", width=.5, fill="tomato3") +
+  geom_text(aes(label=round(average)))+
+  labs(title="Ranging Alcohol Use", 
+       subtitle="Crude Prevalence", 
+       caption="source: CDI") + 
+  theme(axis.text.x = element_text(angle=65, vjust=0.6))
+```
+
+I was interested in the average mortality rates of asthma for males and females by geographic location. I selected the location, gender, category, confidence interval data value type. Since all the dataset values are stored as characters, I had to convert to a numeric. I grouped by the location, gender, indicator and summarized by the average asthma mortality rates. 
+
+```{r, results= 'asis'}
+Asthma_df <-select(initial_cdi_df, LocationAbbr, Category, Indicator,Gender, DataValueType, DataValue, HighConfidenceInterval) %>%
+	filter(Category == "Asthma" & DataValueType == "Age-adjusted rate"
+	       & Gender != "Total" & Indicator == "Asthma mortality rate") %>%
+  #filter(complete.cases(.)) %>%
+  mutate(DataValue =  as.numeric(DataValue)) %>%
+  mutate(HighConfidenceInterval =  as.numeric(HighConfidenceInterval)) %>%
+ 	group_by(LocationAbbr,Gender,Indicator, DataValueType) %>%
+	summarise(average = mean(DataValue, na.rm = TRUE), confidence_average = mean(HighConfidenceInterval, na.rm =TRUE))%>%
+  na.omit() %>%
+	arrange(Indicator)%>%
+  rename(Measure = DataValueType) 
+
+kable(head(Asthma_df,10),  caption = "Asthma Datatable")
+
+```
+
+Plot the asthma mortality rates, split by males and females 
+```{r }
+ggplot(Asthma_df, aes(x = reorder(LocationAbbr,-average), y = average, fill = Gender)) +   
+                              geom_bar(stat = "identity", width = .6)
+```
+
+
+Plot the average confidence interval for the mortality rates 
+```{r }
+ggplot(Asthma_df, aes(x = reorder(LocationAbbr,-average), y = confidence_average, fill = Gender)) +   
+                              geom_bar(stat = "identity", width = .6)
+```
+
+I was interested in the instances of melanoma by geographic location. The .readcsv delimiter separator incorrectly split columns due to the presence of a comma. I used the unite function to correct the columns. I then flited by the age-adjusted rate indicator. Converted summarize columns to numeric and omitted the NAs.
+
+```{r, results= 'asis'}
+melanoma_df <-select(initial_cdi_df, LocationAbbr, Category, Indicator,Datasource,
+                    DataValueUnit,DataValueType, DataValue, DataValueAlt, DataValueFootnoteSymbol) %>%
+	filter( Category == "Cancer" & Indicator == "\"Invasive melanoma") %>%
+  unite_("Indicator", c("Indicator","Datasource")) %>%
+  unite_("DataValueUnit",c("DataValueType","DataValue")) %>%
+  filter( DataValueAlt == "Average Annual Age-adjusted Rate" | 
+          DataValueUnit == "Average Annual Age-adjusted Rate")%>%
+  rename(DataValue = DataValueFootnoteSymbol) %>%
+  mutate(DataValue =  as.numeric(DataValue)) %>%
+  group_by(LocationAbbr,Indicator, DataValueAlt) %>%
+	summarise(average = mean(DataValue, na.rm = TRUE))%>%
+  na.omit() %>%
+	arrange(Indicator)%>%
+  rename(Measure = DataValueAlt) 
+
+kable(head(melanoma_df,10),  caption = "Melanoma Datatable")
+
+```
+```{r }
+ggplot(head(melanoma_df,20), aes(x= reorder(LocationAbbr, -average), y= average)) +
+  geom_bar(stat="identity", color="blue", fill="white") +
+  geom_text(aes(label=round(average)), vjust=-0.3, size=3.5)+
+  theme_minimal()+ labs(title="Top 20 States With Melanoma Cases %")
+```
+
+
+I was interested in the mortality rates of melanoma by geographic location. The .readcsv delimiter separator incorrectly split columns due to the presence of a comma. I used the unite function to correct the columns. I then flited by the age-adjusted rate indicator. Converted summarize columns to numeric and omitted the NAs.
+
+```{r, results= 'asis'}
+melanomadeaths_df <-select(initial_cdi_df, LocationAbbr, Category, Indicator,Datasource,
+                    DataValueUnit,DataValueType, DataValue, DataValueAlt, DataValueFootnoteSymbol) %>%
+	filter( Category == "Cancer" & Indicator == "\"Melanoma") %>%
+  unite_("Indicator", c("Indicator","Datasource")) %>%
+  unite_("DataValueUnit",c("DataValueType","DataValue")) %>%
+  filter( DataValueAlt == "Average Annual Age-adjusted Rate" | 
+          DataValueUnit == "Average Annual Age-adjusted Rate")%>%
+  rename(DataValue = DataValueFootnoteSymbol) %>%
+  mutate(DataValue =  as.numeric(DataValue)) %>%
+  group_by(LocationAbbr,Indicator, DataValueAlt) %>%
+	summarise(average = mean(DataValue, na.rm = TRUE))%>%
+  na.omit() %>%
+	arrange(Indicator)%>%
+  rename(Measure = DataValueAlt) 
+
+kable(head(melanomadeaths_df,10),  caption = "Melanoma Mortality Datatable")
+
+```
+```{r }
+ggplot(head(melanomadeaths_df,20), aes(x= reorder(LocationAbbr, -average), y= average)) +
+  geom_bar(stat="identity", color="red", fill="red") +
+  geom_text(aes(label=round(average)), vjust=-0.3, size=3.5)+
+  theme_minimal()+ labs(title="Average Melanoma Deaths By State %")
+```
+
+## Project 2, Dataset 3: Marriage and Divorce Rates
+Taken from the week 5 discussion board.  National marriage and divorce rate data from National Vital Statistics System
+
+
+
+Read in the initial dataframe. I used the na.strings to turn all blanks to NAs. This is will me quickly remove unwanted columns in the tidying process
+```{r, results= 'asis'}
+initial_md_df<-(read.table('C:/Data 607/Project 2 Dataset/marriage_divorce.csv',  header = FALSE, sep = ",", quote = "\"" , stringsAsFactors = FALSE,fill = TRUE,na.strings = c("", "NA"))) 
+
+#initial_md_df <- initial_md_df[!apply(is.na(initial_md_df) | initial_md_df == "", 1, all),]
+
+kable(head(initial_md_df,10),  caption = "Initial Marriages & Divorces Datatable")
+
+```
+
+
+I created the marriages dataframe. I used the stringr library to replace the commas to blanks and the converted all the columns to numeric. I noticed during my initial examination of the dataset that the number of marriages exceed 1 million per year and the number of divorces are below 1 million. To make the marriages datatable I filtered population column for above 1 million.
+```{r, results= 'asis'}
+marriages_df <-initial_md_df %>% 
+               na.omit() %>%
+              mutate(V2 = (str_replace_all(V2, ",", "")),
+                     V3 = (str_replace_all(V3, ",", "")),
+                     V4 = (str_replace_all(V4, ",", "")))%>%
+
+             
+              mutate(V1 = (str_replace_all(V1, "/1", "")),
+                     V1 = (str_replace_all(V1, "/2", "")))%>%
+  
+                mutate(V2 =  as.numeric(V2),
+                       V3 =  as.numeric(V3),
+                       V1 =  as.numeric(V1),
+                       V4 =  as.numeric(V4))%>%
+               filter( V2 > 1000000) %>%
+      
+             
+              rename(Year = V1, Marriages = V2, Population = V3,
+                     Rate = V4)
+            
+kable(head(marriages_df,10),  caption = "Marriages Datatable")             
+             
+```
+```{r }
+theme_set(theme_bw())
+ggplot(marriages_df, aes(Population, Marriages))+ 
+      geom_point()+
+  labs( title="Marraiges vs Population", 
+       caption="Source: marriages_df")
+```
+```{r }
+ggplot(marriages_df, aes(x= Year, y= Marriages)) +
+  geom_bar(stat="identity", color="yellow", fill="white") +
+  geom_text(aes(label= Marriages), vjust=-0.3, size=2, color="blue")+
+    labs(subtitle="Marriage Numbers From 2000 to 2016", 
+     
+       title="Marriages Per Year", 
+       caption="Source: marriages_df")
+```
+```{r }
+ggplot(marriages_df)  + 
+    geom_line(aes(x=Year, y=Rate),stat="identity", color="yellow") +
+    geom_text(aes(label=Rate, x=Year, y=Rate), color="blue")+
+    labs(subtitle="Rate per 1,000 total population", 
+     
+       title="Marriage Rates", 
+       caption="Source: marriages_df")
+```
+```{r, results= 'asis'}
+
+divorse_df <-initial_md_df %>% 
+               na.omit() %>%
+              mutate(V2 = (str_replace_all(V2, ",", "")),
+                     V3 = (str_replace_all(V3, ",", "")),
+                     V4 = (str_replace_all(V4, ",", "")))%>%
+
+             
+              mutate(V1 = (str_replace_all(V1, "/1", "")),
+                     V1 = (str_replace_all(V1, "/2", "")),
+                     V1 = (str_replace_all(V1, "/3", "")),
+                     V1 = (str_replace_all(V1, "/4", "")),
+                     V1 = (str_replace_all(V1, "/5", "")),
+                     V1 = (str_replace_all(V1, "/6", "")),
+                     V1 = (str_replace_all(V1, "/7", "")))%>%
+  
+                mutate(V2 =  as.numeric(V2),
+                       V3 =  as.numeric(V3),
+                       V1 =  as.numeric(V1),
+                       V4 =  as.numeric(V4))%>%
+               filter( V2 < 1000000) %>%
+      
+             
+              rename(Year = V1, Divorces_Annulments = V2, Population = V3,
+                     Rate = V4)
+            
+kable(head(divorse_df ,10),  caption = "Divorse Datatable")              
+             
+```
+```{r }
+theme_set(theme_bw())
+ggplot(divorse_df, aes(Population,Divorces_Annulments))+ 
+      geom_point()+
+  labs(title="Divorces & Annulments vs Population", 
+       caption="Source: divorse_df")
+```
+```{r }
+ggplot(divorse_df, aes(x= Year, y= Divorces_Annulments)) +
+  geom_bar(stat="identity", color="purple", fill="white") +
+  geom_text(aes(label= Divorces_Annulments), vjust=-0.3, size=2, color="blue")+
+    labs(subtitle="Divorces & Annulments Numbers From 2000 to 2016", 
+       title="Divorces & Annulments Per Year", 
+       caption="Source: divorse_df")
+```
+```{r }
+ggplot(divorse_df)  + 
+    geom_line(aes(x=Year, y=Rate),stat="identity", color="yellow") +
+    geom_text(aes(label=Rate, x=Year, y=Rate), color="blue")+
+    labs(subtitle="Rate per 1,000 total population", 
+       title="Divorce Rates", 
+       caption="Source: divorse_df")
+```
+
+
+I joined the  reformatted divorce and marriages dataframes together so I could create a scatter plot of population of divorces vs marriages. 
+```{r, results= 'asis'}
+joined_df <- marriages_df %>%
+    left_join(divorse_df, by='Year')
+
+kable(head(joined_df ,10),  caption = "Total Datatable")
+```
+```{r }
+theme_set(theme_bw())
+ggplot(joined_df, aes(Marriages,Divorces_Annulments))+ 
+      geom_point()+ 
+  geom_smooth(method="lm", se=F) +
+  labs(title="Marriage vs Divorce", 
+       caption="Source: joined_df")
+```
+
+
+
+
+
+
+
