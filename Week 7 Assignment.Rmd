@@ -1,0 +1,106 @@
+---
+title: "Week 7 Assignment"
+author: "Meaghan Burke"
+date: "March 17, 2018"
+output: html_document
+---
+
+
+```{r results='hide', message=FALSE, warning=FALSE}
+library(knitr)
+library(XML)
+library(dplyr)
+library(tidyr)
+library(xml2)
+library(rjson)
+library(jsonlite)
+```
+
+## R Markdown
+
+Pick three of your favorite books on one of your favorite subjects. At least one of the books should have more
+than one author. For each book, include the title, authors, and two or three other attributes that you find
+interesting.
+Take the information that you’ve selected about these three books, and separately create three files which
+store the book’s information in HTML (using an html table), XML, and JSON formats (e.g. “books.html”,
+“books.xml”, and “books.json”). To help you better understand the different file structures, I’d prefer that you
+create each of these files “by hand” unless you’re already very comfortable with the file formats.
+Write R code, using your packages of choice, to load the information from each of the three sources into
+separate R data frames. Are the three data frames identical?
+
+
+
+## XML Version- Jane Austin Novels 
+```{r}
+# Parse the XML file
+xml_novel <- xmlTreeParse("C:/Data 607/Week7 HW/xml_JaneAustin.xml")
+
+#check if R is recognizing the file as a xml file 
+class(xml_novel)
+```
+
+```{r}
+#Access the top node, view the contents & formatting 
+top_node_novel <- xmlRoot(xml_novel)
+top_node_novel 
+```
+```{r}
+# To put the xml data in a data frame, I extracted the XML values using the function xmlSApply():
+top_node_novel  <- xmlSApply(top_node_novel ,
+                    function(x) xmlSApply(x, xmlValue))
+top_node_novel
+```
+
+```{r,  results = 'asis', message=FALSE, warning=FALSE}
+#Converted the top node object into a dataframe using data.frame. Formatting required dplyr.
+xml_novel_df <- data.frame(t(top_node_novel),
+                     row.names=NULL)%>% 
+                      separate(Authors, c("Author_1", "Author_2"), "\\|", extra = "merge")%>% 
+                      separate(Main_Characters, c("Character_1", "Character_2"), "\\|", extra = "merge")%>%
+                      replace(., is.na(.), "")
+kable(xml_novel_df,  caption = "XML Jane Austin Dataframe")
+
+```
+
+##HTML Novels-Jane Austin
+```{r}
+#View the contents & formatting of the HTML object 
+html_novel <- "C:/Data 607/Week7 HW/html_JaneAustin_v2.html"
+html_novel<- htmlTreeParse(html_novel , error=function(...){}, useInternalNodes = TRUE)
+html_novel
+```
+
+
+```{r,  results = 'asis'}
+#Converted the HTML object into a dataframe. Converted all the factor columns into characters & renamed the columns. I used the dplyr method. 
+html_novel_df <-data.frame(readHTMLTable(html_novel))%>%
+  mutate_if(is.factor,as.character)%>%
+  rename(Novel = NULL.V1, Author_1 = NULL.V2, Author_2 = NULL.V3, Year_Relased = NULL.V4, Pages =NULL.V5, 
+Genre = NULL.V6, Main_Character1 =NULL.V7, Main_Character2 =NULL.V8)
+
+kable(html_novel_df,  caption = "HTML Jane Austin Dataframe")
+
+```
+
+
+
+##JSON Novels-Jane Austin
+
+```{r,  results = 'asis'}
+#view the contents/formatting of the JSON object 
+json_novel_file <- "C:/Data 607/Week7 HW/json_JaneAustin.json.txt"
+json_data <- fromJSON(json_novel_file)
+json_data 
+```
+```{r,  results = 'asis'}
+#Converted the json object into a dataframe object.  
+json_novel_file <- "C:/Data 607/Week7 HW/json_JaneAustin.json.txt"
+json_novel_file <- data.frame(fromJSON(json_novel_file  , flatten=TRUE))%>%
+  mutate_if(is.factor,as.character)
+
+kable(json_novel_file,  caption = "JSON Jane Austin Dataframe")
+
+```
+
+My Findings: while the three objects store the same information, the ingestion into R required different amounts of effort. For me, JSON was the easiest and most straightforward. 
+
