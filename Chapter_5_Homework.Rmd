@@ -1,0 +1,220 @@
+---
+title: "Chapter 5 Homework"
+author: "Meaghan Burke"
+date: "March 25, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Chapter 5 - Inference for Numerical Data
+Practice: 5.5, 5.13, 5.19, 5.31, 5.45
+Graded: 5.6, 5.14, 5.20, 5.32, 5.48
+
+
+
+##5.6 Working backwards, Part II. 
+
+A 90% confidence interval for a population mean is (65,77). 
+The population distribution is approximately normal and the population standard deviation
+is unknown. This confidence interval is based on a simple random sample of 25 observations.
+Calculate the sample mean, the margin of error, and the sample standard deviation
+
+```{r}
+n <- 25
+#(b-a)/2
+margin.error <- ((77-65)/2)
+margin.error 
+```
+```{r}
+#(a+b)/2 
+smaple.mean <- ((77+65)/2)
+smaple.mean 
+```
+```{r}
+#Sample standard devation: ME = t(.05)*s/sqrt(n). Using the qt function and df = 25-1 we get
+
+df <- 25-1
+t.value <- qt(.95, df)
+t.value
+```
+
+
+```{r}
+sd <- (margin.error/t.value)*5
+sd
+```
+
+
+##5.14 SAT scores. 
+
+SAT scores of students at an Ivy League college are distributed with a
+standard deviation of 250 points. Two statistics students, Raina and Luke, want to estimate the
+average SAT score of students at this college as part of a class project. They want their margin of
+error to be no more than 25 points.
+
+(a) Raina wants to use a 90% confidence interval. How large a sample should she collect?
+```{r}
+z <- 1.65 
+margin.error <- 25
+sd <- 250
+
+n <- ((z * sd) / margin.error) ^ 2
+round(n) 
+```
+
+(b) Luke wants to use a 99% confidence interval. Without calculating the actual sample size,
+determine whether his sample should be larger or smaller than Raina’s, and explain your
+reasoning.
+
+Since we are multiplying the SD by a larger number, we will get a larger sample size for Luke’s 99% interval.
+
+(c) Calculate the minimum required sample size for 
+
+
+```{r}
+z <- 2.575 
+margin.error <- 25
+sd <- 250
+
+n <- ((z * sd) / margin.error ) ^ 2
+round(n)
+```
+
+##5.20 High School and Beyond, Part I. 
+The National Center of Education Statistics conducted a survey of high school seniors, 
+collecting test data on reading, writing, and several other subjects.
+Here we examine a simple random sample of 200 students from this survey. Side-by-side box plots
+of reading and writing scores as well as a histogram of the differences in scores are shown below.
+
+(a) Is there a clear difference in the average reading and writing scores?
+
+I do not see a clear difference in the average reading and writing scores 
+
+(b) Are the reading and writing scores of each student independent of each other?
+
+It appears that they are independent of one another 
+
+(c) Create hypotheses appropriate for the following research question: is there an evident difference
+in the average scores of students in the reading and writing exam?
+
+The difference of average in between reading and writing equal zero(μr−μw=0)
+The difference of average in between reading and writing does NOT equal zero (μr−μw≠0)
+
+(d) Check the conditions required to complete this test.
+
+independence & nearly normal distribution. The box plot does not indicate any skewness or outliers. The conditions are seemingly satisfied.
+
+(e) The average observed difference in scores is xreadwrite = 0.545, and the standard deviationof the differences is 8.887 points. Do these data provide convincing evidence of a difference between the average scores on the two exams?
+
+```{r}
+n <- 200
+mean.diff <- -.545
+df <- n-1
+SD <- 8.887
+SE <- SD/sqrt(n)
+T <- (mean.diff-0)/SE
+pvalue <- pt(T, df)
+pvalue
+```
+
+(f) What type of error might we have made? Explain what the error means in the context of the
+application.
+
+Type 1: Incorrectly reject the null hypothesis.
+
+Type 2: Incorrectly reject the alternative hypothesis.
+
+In the case, we may have made a type 2 error by rejecting the alternative hypothesis. I may have wrongly concluded that there is not a difference in the average student reading and writing exam scores.
+
+
+(g) Based on the results of this hypothesis test, would you expect a confidence interval for the
+average difference between the reading and writing scores to include 0? Explain your reasonin
+
+Yes, I would expect a confidence interval for the average difference between reading and writing scores to include 0.
+
+
+##5.32 Fuel eciency of manual and automatic cars, Part I. 
+Each year the US Environmental Protection Agency (EPA) releases fuel economy data on cars manufactured in that year.
+Below are summary statistics on fuel eciency(in miles/gallon) from random samples of cars with
+manual and automatic transmissions manufactured in 2012. Do these data provide strong evidence
+of a difference between the average fuel eciencyof cars with manual and automatic transmissions
+in terms of their average city mileage? Assume that conditions for inference are satisfi
+
+```{r}
+n.a <- 26
+n.m <- 26
+SD.A <- 3.58
+SD.M <- 4.51
+mean.A <- 16.12
+mean.M <- 19.85
+alpha <- .05
+meandiff <- mean.A - mean.M
+SE.A <- SD.A/sqrt(n.a) 
+SE.M <- SD.M/sqrt(n.m)
+SE <- sqrt(((SE.A)^2)+(SE.M)^2)
+T.1 <- (meandiff-0)/SE
+pvalue.1 <- pt(T.1, 25)
+pvalue.1 <- 2*pvalue.1 #because we are running a two tailed test, we multiply by 2
+pvalue.1
+```
+##5.48 Work hours and education. 
+The General Social Survey collects data on demographics,
+education, and work, among many other characteristics of US residents.47 Using ANOVA, we can
+consider educational attainment levels for all 1,172 respondents at once. Below are the distributions
+of hours worked by educational attainment and relevant summary statistics that will be helpful in
+carrying out this analysis.
+
+
+(a) Write hypotheses for evaluating whether the average number of hours worked varies across the
+five groups.
+
+1) The difference of all the averages is equal
+2) There is one average that is not equal to the other ones.
+
+(b) Check conditions and describe any assumptions you must make to proceed with the test.
+
+1)  observations are independent within and across groups
+
+2) The data within each group are nearly normal
+
+3)The variability across the groups is about equal
+
+(c) Below is part of the output associated with this test. Fill in the empty cells.
+```{r}
+mean <- c(38.67, 39.6, 41.39, 42.55, 40.85)
+sd <- c(15.81, 14.97, 18.1, 13.62, 15.51)
+n <- c(121, 546, 97, 253, 155)
+data_table <- data.frame (mean , sd, n)
+data_table
+```
+```{r}
+n <- sum(data_table$n)
+k <- length(data_table$mean)
+
+# Finding degrees of freedom
+df <- k - 1
+dfResidual <- n - k
+
+```
+
+
+
+```{r}
+# Compute the SSG
+meanTotal <- 40.45
+SSG <- sum( data_table$n * (data_table$mean - meanTotal)^2 )
+SSG 
+# Compute the MSG
+MSG <- (1 / df) * SSG
+MSG 
+# Compute the F statistic
+F <- 501.54 / 229.12
+F
+```
+
+d) What is the conclusion of the test?
+
+Given the p-value = 0.0682 is greater than 0.05, I conclude that there is not a significant difference between the groups and therefore I don't reject the null hypothesis.
+
