@@ -1,0 +1,249 @@
+---
+title: "Project 4"
+author: "Meaghan Burke"
+date: "April 15, 2018"
+output: html_document
+---
+#Assignment: Document Classification
+
+It can be useful to be able to classify new “test” documents using already classified “training” documents. A common example is using a corpus of labeled spam and ham (non-spam) e-mails to predict whether or not a new document is spam.
+
+For this project, you can start with a spam/ham dataset, then predict the class of new documents (either withheld from the training dataset or from another source such as your own spam folder). One example corpus: https://spamassassin.apache.org/publiccorpus/
+
+Load in the libraries
+```{r setup, include=FALSE}
+library(tm)
+library(dplyr)
+library(stringr)
+library(zoo)
+library(tidyr)
+library(data.table)
+library(ggplot2)
+library(knitr)
+```
+
+Read the spam files and load the corpus- Spam
+```{r}
+spam_dir <- "C:/Data 607/Project 4/spam/"
+file_spam <- list.files(spam_dir , full.names = TRUE)
+```
+
+```{r}
+#load the corpus
+spam_contents <- c()
+i <- 0
+for (x in file_spam){
+  if(i < 1000){
+    current_spam <- readLines(x)
+    spam_contents <- c(spam_contents, current_spam)
+    i <- (i+1)
+  }
+}
+spam_corpus <- Corpus(VectorSource(spam_contents))
+length(spam_corpus) 
+```
+
+
+Read the ham files and load the corpus- Ham
+```{r}
+ham_dir <- "C:/Data 607/Project 4/ham/"
+file_ham <- list.files(ham_dir, full.names = TRUE)
+```
+
+```{r}
+#load the corpus
+ham_contents <- c()
+i <- 0
+for (x in file_ham){
+  if(i < 1000){
+    current_ham <- readLines(x)
+    ham_contents <- c(ham_contents, current_ham)
+    i <- (i+1)
+  }
+}
+ham_corpus <- Corpus(VectorSource(ham_contents))
+length(ham_corpus) 
+```
+
+
+Cleaning and filtering the ham and spam datasets using tm():
+-- Perform cleaning actions 
+-- Construct term-document matrix 
+-- Remove sparse terms theuniverse of ham and spam document
+```{r}
+spam_tdm <-  TermDocumentMatrix(spam_corpus, control = list(removePunctuation = TRUE,
+                                         stopwords=TRUE,  removeNumbers = TRUE,
+                                         stripWhitespace= TRUE, tolower = TRUE, minWordLength = 2, 
+                                         stemDocument = TRUE, PlainTextDocument = TRUE))
+spam_tdm 
+#This has removed most sparse terms! 
+spam_tdm_new <- removeSparseTerms(spam_tdm, 0.99)
+spam_tdm_new
+```
+
+```{r}
+ham_tdm <-  TermDocumentMatrix(ham_corpus, control = list(removePunctuation = TRUE,
+                                         sstopwords=TRUE,  removeNumbers = TRUE,
+                                         stripWhitespace= TRUE, tolower = TRUE, minWordLength = 2, 
+                                         stemDocument = TRUE, PlainTextDocument = TRUE))
+ham_tdm 
+#This has removed most sparse terms! 
+ham_tdm_new <- removeSparseTerms(ham_tdm , 0.99)
+ham_tdm_new 
+```
+
+
+Exploratory Analysis: word frequency Ham:
+
+-- I can obtain the term frequencies as a vector by converting "spam_tdm_new" into a matrix and summing the row counts. 
+-- I can see the impact by looking at the terms left (ham_tdm terms: 26595 -> ham_tdm_new terms: 29):
+```{r}
+word_frequency_ham <- rowSums(as.matrix(ham_tdm_new))
+word_frequency_ham
+```
+
+
+Comprehensive dataframe ham_tdm_new
+```{r, results = 'asis'}
+ham_df <- as.data.frame(as.table(ham_tdm_new))%>%
+  mutate(Indentifier = "ham")%>%
+  filter(Freq > 0)%>%
+  rename(Frequency = Freq)%>%
+  select(-(Docs))%>%
+  group_by(Terms,Indentifier ) %>%
+  summarise(Frequency = sum(Frequency))
+knitr::kable(ham_df,  caption = "Ham Frequency Table")
+```
+
+
+Plot the Top  words in the ham dataset 
+```{r}
+ggplot(head(ham_df,15), aes(x= reorder(Terms, -Frequency), y= Frequency)) +
+  geom_bar(stat="identity", color="red", fill="white") +
+  geom_text(aes(label=Frequency), vjust=-0.3, size=3.5)+
+  theme_minimal()+ labs(title="Top  Ham Terms")+ 
+  labs( x='Terms') 
+```
+
+
+Exploratory Analysis: word frequency Spam:
+I can obtain the term frequencies as a vector by converting "spam_tdm_new" into a matrix and summing the row counts. I can see the impact by looking at the terms left (spam_tdm terms: 39288 -> spam_tdm_new terms: 59):
+```{r}
+word_frequency_spam <- rowSums(as.matrix(spam_tdm_new))
+word_frequency_spam
+```
+
+
+Comprehensive dataframe spam_tdm_new 
+```{r, results = 'asis'}
+spam_df <- as.data.frame(as.table(spam_tdm_new))%>%
+  mutate(Indentifier = "spam")%>%
+  filter(Freq > 0)%>%
+  rename(Frequency = Freq)%>%
+  select(-(Docs))%>%
+  group_by(Terms,Indentifier ) %>%
+  summarise(Frequency = sum(Frequency)) 
+
+knitr::kable(spam_df,  caption = "Spam Frequency Table")
+```
+```{r}
+ggplot(head(spam_df,15), aes(x= reorder(Terms, -Frequency), y= Frequency)) +
+  geom_bar(stat="identity", color="blue", fill="white") +
+  geom_text(aes(label=Frequency), vjust=-0.3, size=3.5)+
+  theme_minimal()+ labs(title="Top Spam Terms")+ 
+  labs( x='Terms') 
+```
+
+Merge the Spam and Ham Data Frames:
+
+```{r results = 'asis'}
+# join the ham and spam dataframes into one
+comprehensive_df <- merge(x = ham_df, y = spam_df, by="Terms", all = TRUE)
+
+comprehensive_df <-comprehensive_df %>%
+  replace_na(list(Frequency.x = 0, Frequency.y = 0,
+                  Indentifier.x = "ham", Indentifier.y = "spam"))%>%
+  rename(ham_identifier = Indentifier.x, spam_identifier = Indentifier.y, 
+         ham_frequency = Frequency.x, spam_frequency =Frequency.y)%>%
+  mutate(total = ham_frequency + spam_frequency,
+         spam_wgt = spam_frequency/total,
+         ham_wgt = 1 - spam_wgt)%>%
+  arrange(desc(spam_wgt))
+
+comprehensive_df$importance_spam = comprehensive_df$spam_frequency/sum(comprehensive_df$spam_frequency)
+comprehensive_df$importance_ham = comprehensive_df$ham_frequency/sum(comprehensive_df$ham_frequency)
+  
+
+knitr::kable(head(comprehensive_df,15),  caption = "Combined Table")
+
+
+```
+
+
+
+
+Calculate the spam and ham scores:
+
+-- read in the testing files
+-- filter the combined dataset for the words presented in the test file
+-- calculate the weighted scores for ham and spam 
+-- determine if it is a spam or ham file 
+-- the order of the scores (weighted ham, weighted spam and total)
+-- the lower the total, the more "spam" like 
+-- (I tried to do a more robust train/test model but it not working)
+```{r}
+scores <- function(file){
+  content <- readLines(file)
+  content  <- paste(content, collapse = ' ')
+  word_list <- strsplit(content , "\\W+")
+  word_list <- as.data.frame(word_list)
+  colnames(word_list) <- c("word")
+  word_list$word <- tolower(word_list$word)
+  
+  total_score <- comprehensive_df %>%
+  filter(Terms %in% as.list(word_list$word))
+  
+  ham_score <- (sum(total_score$ham_frequency *total_score$importance_ham ))
+  
+  print(paste0("ham score: ",ham_score))
+ 
+  spam_score<- (sum(total_score$spam_frequency * total_score$importance_spam))
+
+  print(paste0("spam score: ",spam_score))
+  
+  
+  total <- ham_score - spam_score 
+  print(paste0("total score: ",total))
+}
+```
+
+
+
+Test a few of the ham files:
+-- All the ham files are above a 5000 weighted score 
+```{r}
+scores("C:/Data 607/Project 4/ham/0004.e8d5727378ddde5c3be181df593f1712")
+
+scores("C:/Data 607/Project 4/ham/0015.a9ff8d7550759f6ab62cc200bdf156e7")
+
+scores("C:/Data 607/Project 4/ham/0039.5bf1ec6602c4657bac8d566604572ad5")
+
+scores("C:/Data 607/Project 4/ham/0040.930593a7e616570a2b63f2d774847316")
+
+scores("C:/Data 607/Project 4/ham/0090.314ec4268af7a3a1974d5eab84ea65af")
+```
+
+
+Test a few of the spam files:
+-- All the spam files are below a 5000 weighted score 
+```{r}
+scores("C:/Data 607/Project 4/spam/00002.d94f1b97e48ed3b553b3508d116e6a09")
+
+scores("C:/Data 607/Project 4/spam/00016.67fb281761ca1051a22ec3f21917e7c0")
+
+scores("C:/Data 607/Project 4/spam/00037.21cc985cc36d931916863aed24de8c27")
+
+scores("C:/Data 607/Project 4/spam/00103.2eef38789b4ecce796e7e8dbe718e3d2")
+
+scores("C:/Data 607/Project 4/spam/00146.e9b64856c0cd982a64f47c9ab9084287")
+```
