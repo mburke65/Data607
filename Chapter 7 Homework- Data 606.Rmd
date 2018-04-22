@@ -1,0 +1,197 @@
+---
+title: "Chapter 7-Data 606"
+author: "Meaghan Burke"
+date: "April 22, 2018"
+output: html_document
+---
+## Chapter 7 - Introduction to Linear Regression
+Graded: 7.24, 7.26, 7.30, 7.40
+
+### 7.24 Nutrition at Starbucks, Part I. 
+The scatterplot below shows the relationship between the number of calories and amount of carbohydrates (in grams) Starbucks food menu items contain.Since Starbucks only lists the number of calories on the display items, we are interested in predicting the amount of carbs a menu item has based on its calorie content.
+
+(a) Describe the relationship between number of calories and amount of carbohydrates (in grams)
+that Starbucks food menu items contain.
+
+-- Then number of calories and the amount of carbohydrates seems to have a positive relationship
+
+(b) In this scenario, what are the explanatory and response variables?
+
+-- Explanatory variable: Calories (x axis)
+
+-- Response variable: Carbohydrates (y axis)
+
+(c) Why might we want to fit a regression line to these data?
+
+-- We need to predict the amount of carbs a menu item has based on its calorie content
+
+(d) Do these data meet the conditions required for fitting a least squares line?
+
+-- Linearity (chart 1) : The data while disperse, appears to follow a linear pattern.
+
+-- Nearly normal residuals (chart 3): The residuals distribution appears nearly normal.
+
+-- Constant variability (chart 2): The residuals tend to linger around zero, so I would say that it satisfies this condition.
+
+-- Independent observations: I will assume that each menu item is presumably independent of the next
+
+-- It is uncertain whether the conditions are met in this example
+
+### 7.26 Body measurements, Part III. 
+Exercise 7.15 introduces data on shoulder girth and weight of a group of individuals. The mean shoulder girth is 107.20 cm with a standard deviation of 10.37 cm. The mean height is 171.14 cm with a standard deviation of 9.41 cm. The correlation between height and shoulder girth is 0.67.
+
+(a) Write the equation of the regression line for predicting height.
+
+```{r}
+# y  = b0+b1* x
+# b1 = (Sy/Sx)*R
+
+sd1 <- 10.37
+sd2 <- 9.41
+
+R <- 0.67
+
+b1 <- (sd2 / sd1) * R
+b1
+
+xhat <- 107.2
+yhat <- 171.14
+
+b0 <- yhat - b1 * xhat
+
+b0 
+```
+The regression line for predicting height will be:
+
+y = 105.9651 + 0.6079749 * x
+
+ 
+(b) Interpret the slope and the intercept in this context.
+
+-- Slope: (0.6079749) represents the number of centimeters increase in height for each increase in shoulder girth.
+
+-- Intercept: (105.9651 cm) represent the height in centimeters at girth of 0 cm.
+
+(c) Calculate R2 of the regression line for predicting height from shoulder girth, and interpret it
+in the context of the application.
+
+```{r}
+R <- 0.67
+R2 <- R ^2
+R2 
+```
+
+
+
+(d) A randomly selected student from your class has a shoulder girth of 100 cm. Predict the height
+of this student using the model.
+```{r}
+#inputs are in (a)
+x <- 100
+
+y = b0 + b1 * x
+y
+
+```
+
+(e) The student from part (d) is 160 cm tall. Calculate the residual, and explain what this residual
+means.
+
+Residual = Observed value – predicted value
+```{r}
+yi <- 160
+y <- 166.7626
+Residual <- yi - y
+
+Residual
+```
+The residual being negative indicates that the model is overestimating the value.
+
+(f) A one year old has a shoulder girth of 56 cm. Would it be appropriate to use this linear model
+to predict the height of this child?
+
+---  A measure of 56 is outside the sample would require manipulation and would not be representative in this use case.
+
+
+
+
+### 7.30 Cats, Part I. 
+The following regression output is for predicting the heart weight (in g) of cats from their body weight (in kg). The coecients
+are estimated using a dataset of 144 domestic cats.Estimate Std. Error t value Pr(>|t|)
+
+-- (Intercept): -0.357, 0.692, -0.515, 0.607
+-- body wt:      4.034, 0.250,  16.119, 0.000
+-- s = 1.452 
+-- R2 = 64.66% 
+-- R2 adj = 64.41%
+
+(a) Write out the linear model.
+
+y <- b0 + b1 * x
+
+y <- −0.357 + 4.034⋅x
+
+(b) Interpret the intercept.
+
+-- Intercept: -0.357. The model will predict a negative heart weight when the cat’s body weight is 0.
+
+(c) Interpret the slope.
+
+-- Slope: 4.034. The weight of  heart will increase 4.034 grams every 1 kg increase in body weight 
+
+(d) Interpret R2.
+
+-- R2 = 64.66%. The linear model captures 64.66% of the variation in heart weight
+
+
+(e) Calculate the correlation coefficient.
+
+R = SQRT(R^2)
+
+```{r}
+R2 <-  .6466
+R <- sqrt(R2)
+R 
+```
+
+
+### 7.40 Rate my professor. 
+Many college courses conclude by giving students the opportunity to evaluate the course and the instructor anonymously. However, the use of these student evaluations as an indicator of course quality and teaching e↵ectiveness is often criticized because these measures may reflect the influence of non-teaching related characteristics, such as the physical appearance of the instructor. Researchers at University of Texas, Austin collected data on teaching evaluation score (higher score means better) and standardized beauty score (a score of 0 means
+average, negative score means below average, and a positive score means above average) for sample of 463 professors.24 The scatterplot below shows the relationship between these variables, and also provided is a regression output for predicting teaching evaluation score from beauty score
+
+(a) Given that the average standardized beauty score is -0.0883 and average teaching evaluation
+score is 3.9983, calculate the slope. Alternatively, the slope may be computed using just the
+information provided in the model summary table.
+```{r}
+# y <- b0 + b1 * x
+
+b0 <- 4.010
+
+x <- -0.0883
+y <- 3.9983
+
+b1 <- (y - b0) / x
+
+b1
+```
+
+
+(b) Do these data provide convincing evidence that the slope of the relationship between teaching
+evaluation and beauty is positive? Explain your reasoning.
+
+-- b1 <- (sd2 / sd1) * R
+
+-- sd2 & sd1 are both > 0, meaning that the slope will be positive 
+
+(c) List the conditions required for linear regression and check if each one is satisfied for this model
+based on the following diagnostic plots.
+
+-- Linearity:  Without being provided the correlation coefficient or the R2, we assume the linearity condition is satisfied.
+
+-- Nearly normal residuals: the residuals distribution chart and Q-Q plot appear to be nearly normal.
+
+-- Constant variability: The scatterplot of the residuals does appear to have constant variability.
+
+-- Independent observations: Assuming independence, nothing stating otherwise. 
+
+
