@@ -1,0 +1,42 @@
+---
+title: "Discussion- Week 12"
+author: "Meaghan Burke"
+date: "April 22, 2018"
+output: html_document
+---
+## DATA 607 Discussion 12
+### YouTube Recommendation System Analysis 
+
+Your task is to analyze an existing recommender system that you find interesting.  You should:
+
+#### 1. Perform a Scenario Design analysis as described below.  Consider whether it makes sense for your selected recommender system to perform scenario design twice, once for the organization (e.g. Amazon.com) and once for the organization's customers.
+
+a) Who are the target users?
+-- YouTube hosts a large majority of the internet at approximately 1.5 billion users. Users engage with the platform to discover, watch and share videos. YouTube target's the casual user who will come to the platform to play music or watch a "how to “videos to those who actively follow accounts. 
+
+b) What are the key goals?
+-- The key goals of YouTube are discovering, watching and sharing original videos. YouTube provides as a mechanism for users to interact with other users and content creators. The platform also acts as a distribution and discoverability engine for its content creators. 
+
+c) How YouTube helps its users?
+-- YouTube has integrated personalized video recommendations (recommender system) to help users find videos relevant to their interests. To keep users engaged, YouTube updates it recommendations regularly to reflect changes in the users' interest and to highlight additional content added to the site. 
+
+
+#### 2. Attempt to reverse engineer what you can about the site, from the site interface and any available information that you can find on the Intent or elsewhere.
+
+Source: http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.434.9301&rep=rep1&type=pdf
+
+a) Data Collections:
+-- The YouTube recommendation system collects its data from two main sources: content and user activity. The content data includes titles, descriptions, video types and content providers. User activity data includes explicit and implicit attributes, including ratings and favorites and view times.
+
+b) Recommendations:
+-- To generate a recommendation, the system determines a set of related videos by associations in the videos content.  
+The system then combines the related videos with a user’s activity to generate video recommendation candidates. The candidate recommendations are then organized into three groups: video quality, user specificity and diversification. Video quality signals include metrics such as view count, video ratings, comments and sharing activities. User specificity signals are used to boost videos that are like a user’s unique preferences. Finally, recommendation candidate videos that are too similar are removed and replaced with more varied content to increase content diversity. 
+
+C) Impact:
+-- The YouTube recommender system has improved user engagement, accounting for approximately 60% of clicks on the homepage. 
+
+
+#### 3. Include specific recommendations about how to improve the site's recommendation capabilities going forward.
+
+-- There are billions of videos on YouTube and the platform can’t index videos based on pure content. It has no idea what’s in the video, and has no way to find out reliably. It must rely on what’s in the title of the video, the description, and the tags. Often, the videos will have irrelevant tags and descriptions. To improve the recommendation capabilities there should be a larger emphasis placed on standardizing and policing tagging by the content providers. 
+
