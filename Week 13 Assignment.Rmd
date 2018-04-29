@@ -1,0 +1,120 @@
+---
+title: "Week 13 Assignment"
+author: "Meaghan Burke"
+date: "April 29, 2018"
+output: html_document
+---
+### Week 13 assignment - NoSQL migration
+
+For this assignment, you should take information from a relational database and migrate it to a NoSQL database of your own choosing. 
+
+For the relational database, you might use the flights database, the tb database, the "data skills" database your team created for Project 3, or another database of your own choosing or creation.
+
+For the NoSQL database, you may use MongoDB (which we introduced in week 7), Neo4j, or another NoSQL database of your choosing.
+
+Your migration process needs to be reproducible.  R code is encouraged, but not required.  You should also briefly describe the advantages and disadvantages of storing the data in a relational database vs. your NoSQL database.
+```{r,message=FALSE}
+library(RMongo)
+library(RMySQL)
+library(jsonlite)
+library(knitr)
+```
+
+For this project, I choose to use the movie datatables I stored in MYSQL for the week 2 assignment:
+
+```{r echo=FALSE, results='hide',message=FALSE}
+connection <- dbConnect(MySQL(), user='root', password='Bagfan26**', 
+                 dbname='movies_db', host='127.0.0.1')
+dbListTables(connection)
+```
+
+#### Open the MYSQL database connection
+```{r, message=FALSE}
+#Hide actual connection due to password 
+
+#connection <- dbConnect(MySQL(), user='root', password='*******', 
+                 #dbname='movies_db', host='127.0.0.1')
+
+#dbListTables(connection)
+```
+
+#### Fetch the data with dbGetQuery 
+```{r}
+imdb_info_rs <- dbGetQuery(connection , "select * from imdb_table;")
+ratings_rs <- dbGetQuery(connection , "select * from rating_dim;")
+genre_rs <- dbGetQuery(connection , "select * from genre_dim;")
+```
+
+#### Disconnect from the MYSQL DB
+```{r}
+dbDisconnect(connection)
+connection<-NA
+```
+
+#### Connect to the MongoDB
+```{r}
+mongo <- mongoDbConnect("Movies_New", "localhost", 27017)  
+```
+
+
+#### Create a function for inputting the data into the MongoDB NOSQL environment using the jsonlite library
+```{r}
+insert_data<-function(connection,db,df){
+  df_json<-toJSON(df)
+  
+  #1 clean up
+  df_json<-sub("[","",df_json, fixed = TRUE)
+  df_json<-sub("]","",df_json, fixed = TRUE)
+  df_json<-as.character(df_json)
+  
+  #2 insert document
+  dbInsertDocument(connection, db, df_json)
+  
+}
+```
+
+#### Call the function on imdb_info_rs, ratings_rs & genre_rs 
+```{r}
+#movies, function is called on each row of the dataframe
+for(i in 1:nrow(imdb_info_rs)) {
+  insert_data(mongo,"movie_info_mongo",imdb_info_rs[i,])
+}
+```
+
+```{r}
+#ratings, function is called on each row of the dataframe
+for(i in 1:nrow(ratings_rs)) {
+  insert_data(mongo,"ratings",ratings_rs[i,])
+}
+```
+
+```{r}
+#genre,function is called on each row of the dataframe
+for(i in 1:nrow(genre_rs)) {
+  insert_data(mongo,"genre",genre_rs[i,])
+}
+```
+
+#### Fetch information from the MongoDB
+```{r}
+kable(RMongo::dbGetQuery(mongo, "movie_info_mongo",'{"Year": "1994"}')) 
+```
+
+```{r}
+kable(RMongo::dbGetQuery(mongo, "ratings",'{"Average__Ranking": 16}')) 
+```
+```{r}
+kable(RMongo::dbGetQuery(mongo, "genre",'{"genre": "Action"}')) 
+```
+
+
+
+#### MSQL VS SQL
+Advantages of NOSQL: no relationships- easier to manage/more flexibility. More scalability 
+Disadvantages: less standardization -> consistency issues
+
+Advantages of SQL: relationships- easier to search and create actionable insights 
+Disadvantages: storage/scalability 
+
+
+
