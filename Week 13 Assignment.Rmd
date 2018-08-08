@@ -23,7 +23,7 @@ library(knitr)
 For this project, I choose to use the movie datatables I stored in MYSQL for the week 2 assignment:
 
 ```{r echo=FALSE, results='hide',message=FALSE}
-connection <- dbConnect(MySQL(), user='root', password='Bagfan26**', 
+connection <- dbConnect(MySQL(), user='root', password='', 
                  dbname='movies_db', host='127.0.0.1')
 dbListTables(connection)
 ```
